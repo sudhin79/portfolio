@@ -160,7 +160,6 @@
     var self = this;
     dt = Math.min(dt, 0.2);
     this.time += dt;
-    this.clock += dt * 1.0;
 
     this.timers = this.timers.filter(function (t) {
       if (self.time >= t.at) { t.fn(); return false; }

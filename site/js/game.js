@@ -2,11 +2,12 @@
 (function () {
   'use strict';
 
-  var ROUNDS = 5, SECONDS = 25;
+  var ROUNDS = 5, SECONDS = 30;
 
   var POOL = [
     {
       title: '502s on every page, two minutes after a release',
+      plain: 'A new version went out and now the whole site is down.',
       lines: ['nginx: connect() failed (111: Connection refused) upstream api', 'api-7f9c2   Restarting (1) 8 seconds ago', 'last deploy: app:44, 2m ago'],
       options: [
         { t: 'Roll back to app:43, then investigate', k: 'best', why: 'Users first, curiosity later. The rollback takes a minute, and the bug will still be there after breakfast.' },
@@ -16,6 +17,7 @@
     },
     {
       title: 'Disk at 97% on the database server',
+      plain: 'The database’s hard drive is nearly full, because one log file got huge.',
       lines: ['/dev/sda1   97%   4.1G free', '/var/lib/docker/containers/9ac1.../9ac1-json.log   41G', 'postgres: warning: running low on disk'],
       options: [
         { t: 'docker system prune -a --volumes', k: 'bad', why: 'You just deleted the database. That --volumes flag removes unused volumes, and this is how people end up in post-mortems.' },
@@ -25,6 +27,7 @@
     },
     {
       title: 'Browsers are warning that the site is not secure',
+      plain: 'The site’s security certificate expired, and a firewall change stopped it renewing.',
       lines: ['NET::ERR_CERT_DATE_INVALID', 'certbot: Timeout during connect (likely firewall problem)', 'ufw: 80/tcp DENY   (changed yesterday)'],
       options: [
         { t: 'Reboot the server', k: 'bad', why: 'The certificate is still expired after the reboot, and now you’ve had an outage as well.' },
@@ -34,6 +37,7 @@
     },
     {
       title: 'API returning 500s. Database refusing connections',
+      plain: 'The app has opened so many connections that the database won’t accept more.',
       lines: ['FATAL: sorry, too many clients already', 'pg_stat_activity: 97 idle connections, all from api', 'max_connections = 100'],
       options: [
         { t: 'Cap the API’s connection pool and restart the API', k: 'best', why: 'The database is fine. The app is hoarding idle connections, so that’s where the fix belongs.' },
@@ -43,6 +47,7 @@
     },
     {
       title: 'Upload queue climbing and nothing is finishing',
+      plain: 'One broken file keeps being retried, and everything behind it is stuck.',
       lines: ['queue depth: 12,480 and rising', 'workers: 8/8 busy', 'job a91f: attempt 214, corrupt-scan.pdf'],
       options: [
         { t: 'Purge the queue', k: 'bad', why: 'You just deleted 12,480 people’s uploads to get rid of one bad file.' },
@@ -52,6 +57,7 @@
     },
     {
       title: 'Monitoring says Jenkins is DOWN',
+      plain: 'An internal build tool is unreachable. Customers can’t tell.',
       lines: ['prometheus: target jenkins DOWN (6m)', 'cloudflared: connection lost', 'site: 200 OK, errors 0.02%'],
       options: [
         { t: 'Ack it, fix it after sleep, stop this alert paging at night', k: 'best', why: 'Users are fine and nothing’s on fire. A page should mean a human is needed right now, so fix the alert too.' },
@@ -61,6 +67,7 @@
     },
     {
       title: 'GitHub says an AWS key was pushed to a public repo',
+      plain: 'A password to the cloud account went public, and a stranger is already using it.',
       lines: ['secret scanning: AWS access key detected', 'pushed 4 minutes ago', 'CloudTrail: RunInstances x12 from an unknown IP'],
       options: [
         { t: 'Force-push to remove the commit', k: 'bad', why: 'Bots scraped it within seconds, and someone is already using it. The key is still live.' },
@@ -70,6 +77,7 @@
     },
     {
       title: 'Traffic is 40 times normal, and all of it hits /login',
+      plain: 'Bots are hammering the login page, trying stolen passwords.',
       lines: ['rps: 41,200', 'top source: one /24 = 81% of requests', 'POST /login: 99% returning 401'],
       options: [
         { t: 'Rate-limit and block that range at the edge', k: 'best', why: 'This isn’t popularity, it’s credential stuffing. Stop it before it reaches your servers.' },
@@ -137,16 +145,21 @@
 
       var title = el('h3', 'oc-title', q.title);
       title.tabIndex = -1;
+      var plain = el('p', 'oc-plain', q.plain);
       var pre = el('pre', 'oc-lines', q.lines.join('\n'));
       var choices = el('div', 'oc-choices');
       shuffle(q.options).forEach(function (o) {
         choices.appendChild(button(o.t, 'oc-choice', function () { answer(o); }));
       });
-      show([head, track, title, pre, choices], title);
+      show([head, track, title, plain, pre, choices], title);
 
-      var began = performance.now();
+      // Counts only while the tab is open: nobody should lose a round by answering a message.
+      var used = 0, tick = performance.now();
       timer = setInterval(function () {
-        var t = (performance.now() - began) / 1000, remain = Math.max(0, SECONDS - t);
+        var n = performance.now();
+        if (!document.hidden) used += (n - tick) / 1000;
+        tick = n;
+        var remain = Math.max(0, SECONDS - used);
         bar.style.width = (remain / SECONDS * 100) + '%';
         clock.textContent = Math.ceil(remain) + 's';
         root.classList.toggle('urgent', remain < 7);
@@ -186,6 +199,7 @@
       else if (r >= 3) { title = 'You’d survive the night.'; line = 'Tired, but employed. The ones you missed are the ones you only learn by getting them wrong once.'; }
       else { title = 'Go back to bed. I’ve got it.'; line = 'No shame in that. Most of these rules come from somebody’s terrible night, which is why teams hire people who’ve already had them.'; }
 
+      if (opts.onFinish) opts.onFinish(r, ROUNDS, state.down);
       var stamp = el('p', 'oc-score', r + '/' + ROUNDS + ' best calls · ' + state.down + ' min of downtime');
       var h = el('h3', 'oc-title', title); h.tabIndex = -1;
       var p = el('p', 'oc-why', line);

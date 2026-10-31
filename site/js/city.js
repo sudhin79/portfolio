@@ -105,7 +105,7 @@
     this.plane = { x: -1, wait: 7 };
     this.shoot = null; this.shootWait = 9;
     this.train = { x: -9999, wait: 4 };
-    this.zs = []; this.zT = 0; this.poke = 0;
+    this.zs = []; this.zT = 0; this.poke = 0; this.pokeText = 'mmph'; this.hint = null;
     this.towers[1].crown = 3; // this roof is taken
     this.glints = [];
     for (var g = 0; g < 70; g++) this.glints.push({ x: r(), y: r(), l: 6 + r() * 34, p: r() * 6 });
@@ -149,6 +149,16 @@
     var s = this.cam.scale, x = this.towerX(1), roof = this.deckY() - this.towers[1].floors * FH * s, w = 50 * s, h = 27 * s;
     return { x: x + (TW * s - w) / 2, y: roof - h, w: w, h: h };
   };
+  City.prototype.hitTrain = function (mx, my) {
+    var tr = this.train, carW = this.small ? 26 : 46, y = this.cam.horizon - (this.small ? 13 : 18);
+    return tr.x > -9000 && mx >= tr.x - 8 && mx <= tr.x + 9 * carW + 8 && my >= y - 14 && my <= y + 18;
+  };
+  City.prototype.hitStar = function (mx, my) {
+    var st = this.shoot;
+    if (!st) return false;
+    var sx = st.x + st.life * 240, sy = st.y + st.life * 90;
+    return Math.abs(mx - sx) < 70 && Math.abs(my - sy) < 45;
+  };
   City.prototype.hitFlat = function (mx, my) {
     var f = this.flat();
     return mx >= f.x - 6 && mx <= f.x + f.w + 6 && my >= f.y - 6 && my <= f.y + f.h + 6;
@@ -158,6 +168,7 @@
     var f = this.flat(), s = this.cam.scale, paged = this.sim.paged, morning = this.t > 0.6;
     this.poke = Math.max(0, this.poke - dt);
     var wake = paged || morning || this.poke > 0;
+    var stir = Math.min(1, this.sim.errHot / 6);
 
     ctx.fillStyle = css(sil);
     ctx.fillRect(f.x, f.y, f.w, f.h);
@@ -179,14 +190,19 @@
       ctx.fillRect(wx + 1.5 * s, wy + wh * 0.68, ww - 3 * s, wh * 0.32);
       ctx.beginPath(); ctx.arc(wx + ww * 0.24, wy + wh * 0.58, r, 0, 7); ctx.fill();
       // The charging phone on the bedside table.
-      if (Math.sin(ck * 2) > 0) { ctx.fillStyle = '#7fe0a0'; ctx.fillRect(wx + ww - 2.4 * s, wy + wh * 0.6, 1, 1); }
+      if (stir > 0.15) {
+        // The pressure is building: the phone starts lighting the room.
+        var buzz = Math.sin(ck * 16) > 0;
+        ctx.fillStyle = buzz ? '#ffffff' : '#ff8d83';
+        ctx.fillRect(wx + ww - 3.4 * s + (buzz ? 0.6 : -0.6), wy + wh * 0.55, Math.max(2, 2.2 * s), Math.max(1.5, 1.4 * s));
+      } else if (Math.sin(ck * 2) > 0) { ctx.fillStyle = '#7fe0a0'; ctx.fillRect(wx + ww - 2.4 * s, wy + wh * 0.6, 1, 1); }
     }
 
     if (f.y > this.h) { this.zs.length = 0; return; } // camera has moved on
 
     // Zzz.
     this.zT -= dt;
-    if (!wake && this.zT <= 0 && !this.reduced) { this.zT = 1.5; this.zs.push({ x: f.x + f.w * 0.72, y: f.y - 2, life: 0 }); }
+    if (!wake && this.zT <= 0 && !this.reduced) { this.zT = stir > 0.15 ? 0.7 : 1.5; this.zs.push({ x: f.x + f.w * 0.72, y: f.y - 2, life: 0 }); }
     ctx.textAlign = 'left';
     for (var i = this.zs.length - 1; i >= 0; i--) {
       var z = this.zs[i];
@@ -199,7 +215,7 @@
 
     if (this.small && s < 0.7) return;
     ctx.font = '10.5px Plex, monospace';
-    var label = paged ? 'sudhin · AWAKE' : morning ? 'sudhin · up. nobody called.' : this.poke > 0 ? 'sudhin · mmph. five more minutes' : 'sudhin · asleep';
+    var label = paged ? 'sudhin · AWAKE' : morning ? 'sudhin · up. nobody called.' : this.poke > 0 ? 'sudhin · ' + this.pokeText : stir > 0.55 ? 'sudhin · phone buzzing…' : stir > 0.15 ? 'sudhin · tossing…' : 'sudhin · asleep';
     // Label sits in the clear sky above the roof.
     ctx.textAlign = 'right';
     ctx.fillStyle = paged ? '#ff8d83' : morning ? '#2d3748' : 'rgba(226,231,248,0.95)';
@@ -445,6 +461,8 @@
           var slot = tw.slotOf[f], pod = slot === undefined ? null : map[n + ':' + slot];
           var wy = base - (f + 1) * fh + (fh - wh) / 2;
           var isHover = hv && hv.node === n && hv.slot === slot;
+          // The first-mission hint: one floor quietly asks to be clicked.
+          if (this.hint && this.hint.node === n && this.hint.slot === slot && Math.sin(ck * 5) > 0) isHover = true;
           for (var c = 0; c < COLS; c++) {
             var wn = tw.win[f][c], alpha = 0, col = null;
             var offAt = 1 - wn.off * 0.7; // each window has its own moment to switch off at dawn

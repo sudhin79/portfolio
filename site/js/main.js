@@ -12,6 +12,7 @@
   var FAULTS = window.LightsOnFaults;
   var city = new window.LightsOnCity($('#world'), sim, { reduced: reduced });
   var sound = new window.LightsOnSound();
+  var night = window.LightsOnNight({ counter: $('#badges'), list: $('#nl-list'), toast: toast });
   if (reduced) city.power = 1;
 
   /* ---------- Camera: each section declares a stage; the camera eases between them. ---------- */
@@ -39,7 +40,7 @@
     onScroll();
   }
 
-  var last = { clock: '' };
+  var last = { clock: '' }, lastY = window.scrollY;
   function ease(x) { return x * x * (3 - 2 * x); }
 
   function onScroll() {
@@ -67,15 +68,54 @@
     // Clock follows the sky.
     var tA = toSec(a.time), tB = toSec(b.time);
     clockBase = tA + (tB - tA) * g;
+    // Only real scrolling restarts the tick. Recalculating the layout must not touch the time.
+    if (Math.abs(y - lastY) > 1) { idle = 0; lastY = y; }
   }
   function toSec(s) { var p = s.split(':'); return +p[0] * 3600 + +p[1] * 60; }
-  var clockBase = toSec('03:07');
+  var clockBase = toSec('03:07'), idle = 0;
+  var pad = function (n) { return (n < 10 ? '0' : '') + n; };
 
-  function updateClock(now) {
-    var c = Math.floor(clockBase + (reduced ? 0 : (now / 1000) % 60));
-    var h = Math.floor(c / 3600), m = Math.floor(c / 60) % 60, s = c % 60;
-    var txt = '0' + h + ':' + (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+  /* One clock for the page. Scrolling moves the night along; sitting still lets it tick. */
+  function storyNow() { return clockBase + idle; }
+  function updateClock() {
+    var c = Math.floor(storyNow()) % 86400;
+    var txt = pad(Math.floor(c / 3600)) + ':' + pad(Math.floor(c / 60) % 60) + ':' + pad(c % 60);
     if (txt !== last.clock) { $('#clock').textContent = txt; last.clock = txt; }
+  }
+
+  /* The header is a story. This line is the truth. */
+  function realTime() {
+    var box = $('#realtime');
+    try {
+      var parts = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Kolkata', hour: 'numeric', hourCycle: 'h23' }).format(new Date());
+      var hour = parseInt(parts, 10);
+      var t = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Kolkata', hour: 'numeric', minute: '2-digit', hour12: true }).format(new Date()).toLowerCase();
+      box.textContent = hour < 6 ? 'It really is ' + t + ' in Mumbai right now. I really am asleep. Click gently.'
+        : hour < 9 ? 'Real Mumbai time: ' + t + '. I just got up, and nobody called.'
+        : hour < 19 ? 'Real Mumbai time: ' + t + '. I’m at work, so this is a replay of last night.'
+        : 'Real Mumbai time: ' + t + '. Tonight’s shift starts soon, so here’s last night’s.';
+      box.hidden = false;
+    } catch (e) { box.hidden = true; }
+  }
+  realTime();
+
+  /* ---------- Missions: one clear next thing to do ---------- */
+  var MISSIONS = [
+    { text: 'Mission 1: one floor in the city is blinking. Click it.', next: null },
+    { text: 'I slept through that. Mission 2: let the monsoon hit.', next: 'node' },
+    { text: 'Still asleep. One failure won’t do it. Mission 3: crash the database, and keep crashing it.', next: 'db' },
+    { text: 'You woke me up. That’s the record to beat.', next: null }
+  ];
+  var mission = -1;
+  function setMission(n) {
+    if (n <= mission) return;
+    mission = n;
+    $('#mission').textContent = MISSIONS[n].text;
+    $$('.fault').forEach(function (b) { b.classList.toggle('next', b.dataset.fault === MISSIONS[n].next); });
+    if (n === 0) {
+      var pick = sim.pods.filter(function (p) { return p.state === 'run' && p.node === 2; })[0] || sim.pods[0];
+      city.hint = pick ? { node: pick.node, slot: pick.slot } : null;
+    } else city.hint = null;
   }
 
   /* ---------- Fault buttons ---------- */
@@ -93,7 +133,12 @@
   $$('.try').forEach(function (b) {
     b.addEventListener('click', function () {
       $('#break').scrollIntoView({ behavior: reduced ? 'auto' : 'smooth' });
-      setTimeout(function () { sim.trigger(b.dataset.fault); }, reduced ? 0 : 750);
+      var tries = 0;
+      (function arrive() {
+        var settled = Math.abs($('#break').getBoundingClientRect().top) < 8;
+        if (settled || ++tries > 40) sim.trigger(b.dataset.fault);
+        else setTimeout(arrive, 50);
+      })();
     });
   });
 
@@ -132,6 +177,12 @@
       c.lineTo(W, H); c.lineTo(W - (data.length - 1) * (W / 89), H); c.closePath();
       c.globalAlpha = 0.14; c.fillStyle = m.color; c.fill(); c.globalAlpha = 1;
     });
+    var stir = Math.min(1, sim.errHot / 6);
+    $('#sleep-bar').style.width = (stir * 100) + '%';
+    if (!sim.paged) {
+      $('#pager-text').textContent = stir > 0.55 ? 'Phone is buzzing…' : stir > 0.15 ? 'Sudhin is tossing…' : 'Sudhin is asleep';
+      $('#pager').classList.toggle('stirring', stir > 0.15);
+    }
     $('#budget').textContent = sim.budget.toFixed(1) + '%';
     $('#budget-bar').style.width = sim.budget + '%';
     var q = $('#queue');
@@ -166,8 +217,27 @@
   sim.on('clear', function () { logEl.textContent = ''; });
   sim.on('metrics', renderMetrics);
   sim.on('lightning', function () { if (!reduced) city.flash = 1; sound.thunder(); });
-  sim.on('fault', function () { sound.click(); });
-  sim.on('page', function () { sound.pager(); });
+  var firstFaultAt = null;
+  sim.on('fault', function (id) {
+    sound.click();
+    var st = night.stats;
+    st.failures++;
+    if (firstFaultAt === null) firstFaultAt = performance.now();
+    if (id === 'kill') { st.kills++; night.unlock('kill'); setMission(1); }
+    if (id === 'node') { night.unlock('monsoon'); setMission(2); }
+    if (id === 'db' && mission < 2) setMission(2);
+  });
+  sim.on('page', function () {
+    sound.pager();
+    var st = night.stats;
+    st.wakes++;
+    if (firstFaultAt !== null) {
+      var took = (performance.now() - firstFaultAt) / 1000;
+      st.fastest = st.fastest === null ? took : Math.min(st.fastest, took);
+    }
+    night.unlock('wake');
+    setMission(3);
+  });
   sim.on('survived', function (n) { $('#survived').textContent = n; });
 
   /* ---------- Explanations ---------- */
@@ -190,16 +260,36 @@
     $('#woken-body').textContent =
       'It took ' + n + ' failure' + (n === 1 ? '' : 's') + ' in 30 seconds to keep errors above 5%. ' +
       'One failure is the system’s problem. This many is mine, and getting the right person out of bed within seconds is exactly what the alerting is for.';
-    woken.hidden = false;
-    $('#woken-reset').focus({ preventScroll: true });
+    // Pull in on the one window that matters, then let him speak.
+    var f = city.flat(), cv = $('#world');
+    root.classList.add('waking');
+    if (!reduced) {
+      cv.style.transformOrigin = (f.x + f.w / 2) + 'px ' + (f.y + f.h / 2) + 'px';
+      cv.style.transform = 'scale(' + (window.innerWidth < 900 ? 3 : 3.6) + ')';
+    }
+    setTimeout(function () {
+      woken.hidden = false;
+      $('#woken-reset').focus({ preventScroll: true });
+    }, reduced ? 0 : 1500);
   });
-  $('#woken-reset').addEventListener('click', function () {
+
+  function closeWake() {
     $('#woken').hidden = true;
+    root.classList.remove('waking');
+    $('#world').style.transform = '';
     $('#pager').classList.remove('awake');
     $('#pager-text').textContent = 'Sudhin is asleep';
     var kept = sim.survived;
     sim.reset(); sim.survived = kept;
+    firstFaultAt = null;
     logEl.textContent = '';
+  }
+  $('#woken-play').addEventListener('click', function () {
+    closeWake();
+    $('#oncall').scrollIntoView({ behavior: reduced ? 'auto' : 'smooth' });
+  });
+  $('#woken-reset').addEventListener('click', function () {
+    closeWake();
     sim.log('incident closed. Going back to sleep', 'ok');
     $('#explain').innerHTML = '<p class="explain-title">Round two?</p><p class="explain-body">The system’s back to normal. So am I.</p>';
   });
@@ -218,20 +308,40 @@
     stageEl.addEventListener('click', function (e) {
       if (e.target !== stageEl) return;
       if (city.hitFlat(e.clientX, e.clientY)) {
+        e.preventDefault();
+        var POKES = ['mmph. five more minutes', 'still asleep', 'who keeps doing this', 'there are other portfolios', 'okay, hire me and i’ll get up', 'i have your click logged (i don’t)', 'this is not an incident', 'fine. i’m awake. happy?'];
+        var st = night.stats;
+        city.pokeText = POKES[Math.min(st.pokes, POKES.length - 1)];
+        st.pokes++;
         city.poke = 2.6;
         sound.tick();
-        sim.log('sudhin: mmph. five more minutes', 'out');
+        sim.log('sudhin: ' + city.pokeText, 'out');
+        if (st.pokes >= 5) night.unlock('poke');
         return;
       }
       var h = city.hit(e.clientX, e.clientY);
-      if (h) sim.killPod(h.node, h.slot);
+      if (h && sim.killPod(h.node, h.slot)) e.preventDefault();
     });
+  });
+
+  /* Small rewards for looking at the scenery. */
+  document.addEventListener('click', function (e) {
+    if (e.defaultPrevented || e.target.closest('a,button,input,dialog,p,h1,h2,h3,li,pre,dl,.oc-body,.faults,aside')) return;
+    if (city.hitStar(e.clientX, e.clientY)) {
+      night.unlock('wish');
+      toast('Shooting star', 'Wish granted if the wish was “no alerts tonight”.');
+      city.shoot = null;
+    } else if (city.hitTrain(e.clientX, e.clientY)) {
+      night.unlock('train');
+      toast('Western Line', 'Running 3 minutes late. Not my incident.');
+    }
   });
 
   /* ---------- Shell ---------- */
   $('#cli').addEventListener('submit', function (e) {
     e.preventDefault();
     var input = $('#cli-in');
+    if (input.value.trim()) { night.stats.commands++; night.unlock('shell'); }
     sim.exec(input.value);
     input.value = '';
   });
@@ -247,13 +357,17 @@
     // Slower tiers also draw less often, which leaves the main thread free for scrolling and clicks.
     var gap = reduced && city.power === 1 ? 200 : city.quality === 1 ? 0 : city.quality === 0.5 ? 25 : 50;
     if (now - prev < gap) return;
-    var dt = Math.min(0.2, (now - prev) / 1000);
+    var real = Math.min(1, (now - prev) / 1000);
+    var dt = Math.min(0.2, real);
     prev = now;
+    idle += real;
 
     if (city.power < 1) { if (!bootAt) bootAt = now; city.power = Math.min(1, (now - bootAt) / 2200); }
-    sim.step(dt);
+    // Slow machine or not, a four-second outage lasts four seconds.
+    sim.clock = storyNow();
+    for (var left = real; left > 0; left -= 0.1) sim.step(Math.min(left, 0.1));
     sound.setRain(sim.rain > 0);
-    updateClock(now);
+    updateClock();
     var t0 = performance.now();
     city.draw(dt);
     cost += performance.now() - t0;
@@ -312,6 +426,7 @@
   var runToken = 0;
   function runPipeline(name) {
     var token = ++runToken, script = RUNS[name];
+    if (name !== 'clean') night.unlock('gate');
     $$('[data-run]').forEach(function (b) { b.classList.toggle('on', b.dataset.run === name); });
     $$('li', rail).forEach(function (li) { li.className = ''; });
     pipeLog.textContent = '';
@@ -347,20 +462,28 @@
     soundBtn.textContent = on ? '♪ on' : '♪ off';
     soundBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
   });
-  window.LightsOnGame($('#oc'), { sim: sim, audio: sound, onChange: function () { if (keys.length) layout(); } });
+  window.LightsOnGame($('#oc'), { sim: sim, audio: sound, onChange: function () { if (keys.length) layout(); }, onFinish: function (right, total, down) {
+    var prevBest = night.stats.game;
+    if (!prevBest || right > prevBest.right) night.stats.game = { right: right, total: total, down: down };
+    night.unlock('pager');
+  } });
   var refreshFlows = window.LightsOnFlows(reduced);
 
   /* ---------- The night carries on while you read ---------- */
   var TOASTS = [
-    ['.entry:nth-of-type(3)', '04:02 · andheri disk at 91%', 'Log rotation ran. Back to 62%. Nobody paged.'],
-    ['#pipeline .rail', '04:31 · Build #212 failed', 'Stopped before deploy. The team can read it at 10 a.m.'],
-    ['.kit', '05:16 · SSL certificate renewed', '30 days early. Nginx reloaded. Zero connections dropped.'],
-    ['.path', '06:11 · First locals leave Churchgate', 'Morning traffic is coming. The autoscaler’s ahead of it.']
+    ['.entry:nth-of-type(3)', function () {
+      var k = night.stats.kills;
+      return k ? ['Incident review', k + ' container' + (k === 1 ? '' : 's') + ' killed tonight, all replaced. Whoever did that: nice work.'] : ['andheri disk at 91%', 'Log rotation ran. Back to 62%. Nobody paged.'];
+    }],
+    ['#pipeline .rail', function () { return ['Build #212 failed', 'Stopped before deploy. The team can read it at 10 a.m.']; }],
+    ['.kit', function () { return ['SSL certificate renewed', '30 days early. Nginx reloaded. Zero connections dropped.']; }],
+    ['.path', function () { return ['First locals leave Churchgate', 'Morning traffic is coming. The autoscaler’s ahead of it.']; }]
   ];
   var toastBox = $('#toasts');
-  function toast(title, body) {
+  function toast(title, body, kind) {
+    while (toastBox.children.length > 1) toastBox.removeChild(toastBox.firstChild);
     var t = document.createElement('div');
-    t.className = 'toast';
+    t.className = 'toast' + (kind ? ' ' + kind : '');
     var a = document.createElement('b'); a.textContent = title;
     var b = document.createElement('span'); b.textContent = body;
     t.appendChild(a); t.appendChild(b);
@@ -373,11 +496,92 @@
       var target = $(d[0]);
       if (!target) return;
       var o = new IntersectionObserver(function (es) {
-        if (es[0].isIntersecting) { toast(d[1], d[2]); o.disconnect(); }
+        if (es[0].isIntersecting) {
+          var c = d[1](), m = Math.floor(storyNow() / 60) % 60;
+          toast(pad(Math.floor(storyNow() / 3600)) + ':' + pad(m) + ' · ' + c[0], c[1]);
+          o.disconnect();
+        }
       }, { threshold: 0.2 });
       o.observe(target);
     });
   }
+
+  /* ---------- Toolkit: each tool answers for itself ---------- */
+  var KIT = [
+    [ // Use every week
+      ['Docker & Compose', 'Multi-stage builds, volumes and networks on all my production projects.', 'How do you keep secrets out of an image?'],
+      ['Jenkins', 'Declarative pipelines on GCP agents, with scanning, health checks and rollback.', 'What should make a pipeline stop?'],
+      ['Nginx', 'Reverse proxy, SSL, rate limits and upload limits tuned for huge PDFs.', 'What did you change for large file uploads?'],
+      ['Linux', 'Ubuntu and CentOS, plus locked-down RHEL servers at a client.', 'What changes when you can only reach a server through a proxy?'],
+      ['Bash', 'Deployment automation, and the load-test script behind my auto-scaling project.', 'What’s worth scripting, and what isn’t?'],
+      ['Git & GitHub', 'Branching, pull requests, and webhooks that start pipelines.', 'How does a merge turn into a deploy?'],
+      ['Certbot', 'Let’s Encrypt certificates that renew themselves on production Nginx.', 'What’s the most common way auto-renewal breaks?']
+    ],
+    [ // Have run in production
+      ['AWS', 'EC2, S3, IAM, CloudWatch, SES and SNS, running real client platforms.', 'How did CloudWatch help on the resume parser?'],
+      ['GCP', 'Compute Engine and Cloud Run for the OCR platform, plus Jenkins agents.', 'Why run a Jenkins agent on a separate VM?'],
+      ['Prometheus + Grafana', 'Full stack on EC2 with Alertmanager, Node Exporter and cAdvisor.', 'What makes an alert worth waking someone?'],
+      ['Trivy + SonarQube', 'Security and quality gates inside the pipeline.', 'What happens when a scan finds something critical?'],
+      ['PostgreSQL', 'Dockerised, on persistent volumes, with migrations in the deploy flow.', 'How do you run a schema migration safely?'],
+      ['MongoDB + MySQL', 'Deployed and kept running, including volume management.', 'What can go wrong with databases in containers?'],
+      ['Cloudflare Tunnel', 'Let Prometheus scrape Jenkins without opening a port.', 'Why a tunnel instead of a firewall rule?']
+    ],
+    [ // Actively levelling up
+      ['Kubernetes', 'Project Nimbus, my Kind lab: Deployments, Services, self-healing and probes.', 'What happened when you deleted a pod on purpose?'],
+      ['Terraform', 'Load-balanced EC2 and auto-scaling groups, written as code.', 'What did your first Terraform mistake teach you?'],
+      ['Helm', 'Packaged my own portfolio for a Kind cluster.', 'When is Helm worth it over plain manifests?'],
+      ['Azure', 'Entra ID, service principals and the Azure DevOps APIs.', 'How does a service principal differ from a user?'],
+      ['AWS SAA-C03', 'Preparing now. I already hold AWS Certified AI Practitioner.', 'Which exam topic has been most useful at work?']
+    ]
+  ];
+  $$('.kit-row').forEach(function (row, idx) {
+    var p = $('p', row), tools = KIT[idx];
+    if (!p || !tools) return;
+    var wrap = document.createElement('div'); wrap.className = 'chips';
+    var detail = document.createElement('div'); detail.className = 'chip-detail'; detail.hidden = true; detail.setAttribute('aria-live', 'polite');
+    tools.forEach(function (t) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'tool'; b.textContent = t[0]; b.setAttribute('aria-expanded', 'false');
+      b.addEventListener('click', function () {
+        var open = b.classList.contains('on');
+        $$('.tool', wrap).forEach(function (x) { x.classList.remove('on'); x.setAttribute('aria-expanded', 'false'); });
+        if (open) { detail.hidden = true; if (keys.length) layout(); return; }
+        b.classList.add('on'); b.setAttribute('aria-expanded', 'true');
+        detail.textContent = '';
+        var a = document.createElement('p'); a.textContent = t[1];
+        var q = document.createElement('p'); q.className = 'ask'; q.textContent = 'Ask me: “' + t[2] + '”';
+        detail.appendChild(a); detail.appendChild(q);
+        detail.hidden = false;
+        if (keys.length) layout();
+      });
+      wrap.appendChild(b);
+    });
+    var col = document.createElement('div');
+    col.appendChild(wrap); col.appendChild(detail);
+    p.replaceWith(col);
+  });
+  $('#kit-sub').hidden = false;
+
+  /* ---------- Night log, missions, sunrise ---------- */
+  var nl = $('#nightlog');
+  $('#badges').addEventListener('click', function () { night.renderList(); nl.showModal(); });
+  $('#nl-close').addEventListener('click', function () { nl.close(); });
+  nl.addEventListener('click', function (e) { if (e.target === nl) nl.close(); });
+
+  if ('IntersectionObserver' in window) {
+    var missionIO = new IntersectionObserver(function (es) {
+      if (es[0].isIntersecting) { setMission(0); missionIO.disconnect(); }
+    }, { threshold: 0.5 });
+    missionIO.observe($('#break'));
+    var dawnIO = new IntersectionObserver(function (es) {
+      if (es[0].isIntersecting) {
+        night.unlock('dawn');
+        night.handover($('#handover'));
+        layout();
+      }
+    }, { threshold: 0.35 });
+    dawnIO.observe($('#morning'));
+  } else setMission(0);
 
   /* ---------- Reveal on scroll, and first pipeline run ---------- */
   if ('IntersectionObserver' in window && !reduced) {

@@ -31,3 +31,4 @@ Push to a GitHub repo and set Settings > Pages > Source to "GitHub Actions". `.g
 | `site/js/game.js` | "Now you hold the pager": the incidents, answers and scoring |
 | `site/js/flows.js` | The animated project diagrams |
 | `site/js/audio.js` | Optional sound, all synthesised |
+| `site/js/night.js` | Achievements and the personal handover note. Kept in memory only |

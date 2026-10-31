@@ -27,12 +27,13 @@
 
 <header class="bar">
   <a class="bar-name" href="#top">Sudhin Swain</a>
-  <p class="bar-clock" aria-hidden="true"><span id="clock">03:07:00</span> IST</p>
+  <p class="bar-clock" aria-hidden="true"><span id="clock">03:07:00</span> · the night shift</p>
   <nav class="bar-nav" aria-label="Main">
     <a href="#log">Work</a>
     <a href="#oncall">Play</a>
     <a href="#path">Path</a>
     <button type="button" class="linklike" id="sound" aria-pressed="false">♪ off</button>
+    <button type="button" class="linklike" id="badges" aria-label="Achievements found tonight">★ 0/10</button>
     <button type="button" class="linklike" data-open-quick>Résumé</button>
     <a class="bar-cta" href="#morning">Contact</a>
   </nav>
@@ -43,6 +44,7 @@
   <section id="top" class="hero" data-time="03:07" data-sky="0">
     <div class="hero-copy">
       <p class="eyebrow"><i class="dot"></i> Mumbai, 3:07 a.m. All systems normal.</p>
+      <p class="realtime" id="realtime" hidden></p>
       <h1>It’s 3 a.m.<br><em>The lights are still&nbsp;on.</em></h1>
       <p class="lede">I’m Sudhin Swain, a DevOps engineer. I build the pipelines, servers and alarms that keep software running, so nobody has to wake up for it.</p>
       <div class="hero-actions">
@@ -60,7 +62,7 @@
       <header class="sim-head">
         <p class="stamp">03:12 · Chaos test</p>
         <h2 id="sim-title">Go on. <em>Break it.</em></h2>
-        <p class="sim-sub">If I’ve done my job, my phone stays quiet. Pick a failure, or click any lit floor to kill it.</p>
+        <p class="sim-sub" id="mission">If I’ve done my job, my phone stays quiet. Pick a failure, or click any lit floor to kill it.</p>
       </header>
       <div class="faults" id="faults" role="group" aria-label="Failures to trigger"></div>
     </div>
@@ -68,6 +70,7 @@
     <div class="stage" data-stage id="sim-stage">
       <div class="pager" id="pager" role="status">
         <span class="pager-state"><i class="dot"></i> <span id="pager-text">Sudhin is asleep</span></span>
+        <span class="sleep-meter" aria-hidden="true"><i id="sleep-bar"></i></span>
         <span class="pager-count"><b id="survived">0</b> failures handled without me</span>
       </div>
     </div>
@@ -104,6 +107,7 @@
         <p id="woken-body"></p>
         <div class="woken-actions">
           <a class="btn btn-primary" href="mailto:sudhinswain@gmail.com?subject=You%20woke%20me%20up">Since I’m awake: email me</a>
+          <button type="button" class="btn" id="woken-play">Your turn: take the pager ↓</button>
           <button type="button" class="btn" id="woken-reset">Let me go back to sleep</button>
         </div>
       </div>
@@ -216,6 +220,7 @@
     <header class="section-head">
       <p class="stamp">05:15 · Toolkit</p>
       <h2>An honest list, because you’ll <em>ask in the interview</em> anyway.</h2>
+      <p class="section-sub" id="kit-sub" hidden>So pick one. I’ll tell you where I used it, and what to ask me about it.</p>
     </header>
     <div class="kit">
       <div class="kit-row">
@@ -249,6 +254,7 @@
 
   <!-- 07:00 -->
   <section id="morning" class="morning" data-time="07:00" data-sky="1">
+    <aside class="handover" id="handover" aria-label="Your night, summarised" hidden></aside>
     <div class="morning-copy">
       <p class="stamp">07:00 · Handover</p>
       <h2>Nobody noticed.<br><em>That’s the job.</em></h2>
@@ -267,6 +273,15 @@
 </main>
 
 <div class="toasts" id="toasts" role="status" aria-live="polite"></div>
+
+<dialog id="nightlog" aria-labelledby="nl-title">
+  <div class="nightlog">
+    <button type="button" class="q-close" id="nl-close" aria-label="Close">✕</button>
+    <h2 id="nl-title">Tonight’s log</h2>
+    <p>Things you can do to my city. All of them are survivable.</p>
+    <ul id="nl-list"></ul>
+  </div>
+</dialog>
 
 <!-- One source of truth: this is both the 30-second view and the printed résumé. -->
 <dialog id="quick" aria-labelledby="q-name">
@@ -310,6 +325,7 @@
 <script src="js/audio.js" defer></script>
 <script src="js/flows.js" defer></script>
 <script src="js/game.js" defer></script>
+<script src="js/night.js" defer></script>
 <script src="js/main.js" defer></script>
 </body>
 </html>
