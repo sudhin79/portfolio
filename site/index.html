@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sudhin Swain · DevOps Engineer, Mumbai</title>
+<meta name="description" content="Sudhin Swain is a DevOps engineer in Mumbai who builds CI/CD pipelines, container platforms and monitoring on AWS and GCP. Try to break his simulated city, and see if you can wake him up.">
+<meta name="author" content="Sudhin Swain">
+<meta name="theme-color" content="#05070f">
+<meta property="og:type" content="profile">
+<meta property="og:title" content="Sudhin Swain · Try to wake me up">
+<meta property="og:description" content="It's 3 a.m. in Mumbai and the lights are still on. A playable DevOps portfolio: break the city and see if the pager goes off.">
+<link rel="canonical" href="https://sudhin79.github.io/portfolio/">
+<meta property="og:url" content="https://sudhin79.github.io/portfolio/">
+<meta property="og:image" content="https://sudhin79.github.io/portfolio/assets/og.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="preload" href="fonts/newsreader-latin-opsz-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="css/styles.css">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"Person","name":"Sudhin Swain","jobTitle":"DevOps Engineer","worksFor":{"@type":"Organization","name":"B2W Infotech"},"address":{"@type":"PostalAddress","addressLocality":"Mumbai","addressCountry":"IN"},"email":"mailto:sudhinswain@gmail.com","sameAs":["https://github.com/sudhin79","https://www.linkedin.com/in/sudhin-swain-b2a9461b7/"],"knowsAbout":["DevOps","CI/CD","Docker","Kubernetes","Jenkins","AWS","GCP","Prometheus","Grafana","Nginx","Linux"]}
+</script>
+</head>
+<body>
+<a class="skip" href="#log">Skip to my work</a>
+<canvas id="world" aria-hidden="true"></canvas>
+
+<header class="bar">
+  <a class="bar-name" href="#top">Sudhin Swain</a>
+  <p class="bar-clock" aria-hidden="true"><span id="clock">03:07:00</span> IST</p>
+  <nav class="bar-nav" aria-label="Main">
+    <a href="#log">Work</a>
+    <a href="#oncall">Play</a>
+    <a href="#path">Path</a>
+    <button type="button" class="linklike" id="sound" aria-pressed="false">♪ off</button>
+    <button type="button" class="linklike" data-open-quick>Résumé</button>
+    <a class="bar-cta" href="#morning">Contact</a>
+  </nav>
+</header>
+
+<main>
+  <!-- 03:07 -->
+  <section id="top" class="hero" data-time="03:07" data-sky="0">
+    <div class="hero-copy">
+      <p class="eyebrow"><i class="dot"></i> Mumbai, 3:07 a.m. All systems normal.</p>
+      <h1>It’s 3 a.m.<br><em>The lights are still&nbsp;on.</em></h1>
+      <p class="lede">I’m Sudhin Swain, a DevOps engineer. I build the pipelines, servers and alarms that keep software running, so nobody has to wake up for it.</p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="#break">Try to wake me up <span aria-hidden="true">↓</span></a>
+        <button type="button" class="btn" data-open-quick>Hiring? Read the 30-second version</button>
+      </div>
+    </div>
+    <div class="stage" data-stage="wide" id="hero-stage" aria-hidden="true"></div>
+    <p class="hero-key">Every lit window is a running container.<br>Every car on the Sea Link is a request.<br>That’s me on the roof, asleep. Go on, click something.</p>
+  </section>
+
+  <!-- 03:12 -->
+  <section id="break" class="sim" data-time="03:12" data-sky="0" aria-labelledby="sim-title">
+    <div class="sim-left">
+      <header class="sim-head">
+        <p class="stamp">03:12 · Chaos test</p>
+        <h2 id="sim-title">Go on. <em>Break it.</em></h2>
+        <p class="sim-sub">If I’ve done my job, my phone stays quiet. Pick a failure, or click any lit floor to kill it.</p>
+      </header>
+      <div class="faults" id="faults" role="group" aria-label="Failures to trigger"></div>
+    </div>
+
+    <div class="stage" data-stage id="sim-stage">
+      <div class="pager" id="pager" role="status">
+        <span class="pager-state"><i class="dot"></i> <span id="pager-text">Sudhin is asleep</span></span>
+        <span class="pager-count"><b id="survived">0</b> failures handled without me</span>
+      </div>
+    </div>
+
+    <div class="explain" id="explain" aria-live="polite">
+      <p class="explain-title">Nothing has failed yet.</p>
+      <p class="explain-body">Choose a failure. You’ll see what the system did and where I’ve built that safeguard for real.</p>
+    </div>
+
+    <aside class="sim-right" aria-label="Live metrics from the simulation">
+      <div class="metrics" id="metrics"></div>
+      <div class="budget">
+        <span>Error budget left</span><b id="budget">100.0%</b>
+        <div class="budget-track"><i id="budget-bar"></i></div>
+      </div>
+      <div class="queue" id="queue" hidden>
+        <span>Upload queue</span><b id="queue-n">0</b>
+        <div class="budget-track"><i id="queue-bar"></i></div>
+      </div>
+      <ol class="log" id="log-lines" aria-label="System log"></ol>
+      <form class="cli" id="cli" autocomplete="off">
+        <label for="cli-in" aria-label="Command line">$</label>
+        <input id="cli-in" spellcheck="false" autocapitalize="off" placeholder="kubectl get pods   (try: help)">
+      </form>
+      <p class="honest">A simulation in your browser, modelled on setups I’ve run. Not a live production system.</p>
+    </aside>
+
+    <noscript><p class="noscript">The chaos test needs JavaScript. Everything else on this page works without it.</p></noscript>
+
+    <div class="woken" id="woken" hidden>
+      <div class="woken-card" role="alertdialog" aria-labelledby="woken-title" aria-describedby="woken-body">
+        <p class="stamp stamp-alert" id="woken-time">03:14 · PAGE SENT</p>
+        <h3 id="woken-title">Okay. You woke me up.</h3>
+        <p id="woken-body"></p>
+        <div class="woken-actions">
+          <a class="btn btn-primary" href="mailto:sudhinswain@gmail.com?subject=You%20woke%20me%20up">Since I’m awake: email me</a>
+          <button type="button" class="btn" id="woken-reset">Let me go back to sleep</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 03:30 -->
+  <section id="oncall" class="oncall" data-time="03:30" data-sky="0.03" aria-labelledby="oc-title">
+    <div class="oc-panel">
+      <p class="stamp">03:30 · Your turn</p>
+      <h2 id="oc-title">Now <em>you</em> hold the pager.</h2>
+      <div class="oc-body" id="oc" aria-live="polite">
+        <noscript><p class="oc-why">This game needs JavaScript.</p></noscript>
+      </div>
+    </div>
+    <div class="stage" data-stage="wide" aria-hidden="true"></div>
+  </section>
+
+  <!-- 03:41 -->
+  <section id="log" class="log-section" data-time="03:41" data-sky="0.06">
+    <header class="section-head">
+      <p class="stamp">03:41 · Shift log</p>
+      <h2>Real systems, and what could have <em>gone wrong</em> at this hour.</h2>
+      <p class="section-sub">Every project starts with the same question for me: what breaks first, and who finds out?</p>
+    </header>
+
+    <article class="entry">
+      <div class="entry-meta"><p>Bulk resume parser</p><p>AI · queues · AWS</p></div>
+      <div class="entry-main">
+        <h3>A huge batch of PDFs lands at once. The server shrugs.</h3>
+        <dl class="risk">
+          <div><dt>The risk</dt><dd>HR uploads resumes in bulk, the AI parsers pile on, and the whole platform runs out of memory mid-batch.</dd></div>
+          <div><dt>What I built</dt><dd>Containerised batch workers with hard concurrency limits. Failed jobs go to a dead-letter queue and can be re-queued through an admin API, so nothing silently disappears.</dd></div>
+        </dl>
+        <div class="flow" data-flow="resume"></div>
+        <p class="stack">Node.js · React · Docker · AWS EC2 + S3 · Nginx · Let’s Encrypt · CloudWatch</p>
+        <button type="button" class="try" data-fault="flood">Flood the queue yourself <span aria-hidden="true">↑</span></button>
+      </div>
+    </article>
+
+    <article class="entry">
+      <div class="entry-meta"><p>Enterprise client deployment</p><p>On-prem · RHEL</p></div>
+      <div class="entry-main">
+        <h3>No cloud console. No open internet. Ship it anyway.</h3>
+        <dl class="risk">
+          <div><dt>The risk</dt><dd>The client’s environment sits behind a proxy and firewall, with separate web, app and database servers. Source code and packages can’t simply be pulled in.</dd></div>
+          <div><dt>What I did</dt><dd>Deployed the React and Node.js app across their RHEL servers from inside those restrictions, with Nginx routing, HTTPS and domain mapping, and connections to PostgreSQL and Redis.</dd></div>
+        </dl>
+        <div class="flow" data-flow="client"></div>
+        <p class="stack">RHEL · Nginx · SSL · PostgreSQL · Redis · React/Vite · Node.js</p>
+      </div>
+    </article>
+
+    <article class="entry">
+      <div class="entry-meta"><p>Observability stack</p><p>Monitoring · AWS</p></div>
+      <div class="entry-main">
+        <h3>If it’s down and nobody knows, that’s the real outage.</h3>
+        <dl class="risk">
+          <div><dt>The risk</dt><dd>Users discover problems before the team does. And the build server lived somewhere a metrics scraper couldn’t reach.</dd></div>
+          <div><dt>What I built</dt><dd>Prometheus, Grafana and Alertmanager on EC2, with host and container metrics from Node Exporter and cAdvisor. Jenkins gets scraped safely through a Cloudflare Tunnel.</dd></div>
+        </dl>
+        <div class="flow" data-flow="observe"></div>
+        <p class="stack">Prometheus · Grafana · Alertmanager · Node Exporter · cAdvisor · Cloudflare Tunnel</p>
+      </div>
+    </article>
+
+    <article class="entry">
+      <div class="entry-meta"><p>AI OCR form processor</p><p>Gemini · GCP</p></div>
+      <div class="entry-main">
+        <h3>An AI bill can be an outage too.</h3>
+        <dl class="risk">
+          <div><dt>The risk</dt><dd>Handwritten construction forms arrive as huge PDFs, every page costs AI tokens, and an API key baked into an image is one leak away from disaster.</dd></div>
+          <div><dt>What I built</dt><dd>Multi-stage Docker builds, Nginx upload limits tuned for large files, Gemini keys injected only at runtime, and structured logs tracking token use and processing time.</dd></div>
+        </dl>
+        <div class="flow" data-flow="ocr"></div>
+        <p class="stack">Django · React · Docker · Nginx · GCP · Gemini API</p>
+      </div>
+    </article>
+
+    <h3 class="more-title">Also on the log</h3>
+    <ul class="more">
+      <li><b>Legatio</b><span>Production business platform on AWS. Jenkins builds and ships the containers to EC2, with S3 storage and Zoho, MSG91 and VI DLT messaging wired in.</span></li>
+      <li><b>Client Interview Portal</b><span>Jenkins deploys on merge from a GCP agent, with a post-deploy health check. PostgreSQL on persistent volumes, migrations in the workflow, and Nginx rate limiting.</span></li>
+      <li><b>Attendance system</b><span>Kept nightly reconciliation jobs and geo-fenced punch-ins running for employee, manager and admin roles. Found and fixed production failures from container logs.</span></li>
+      <li><b>Finance Vaastu &amp; B2W Green</b><span>Production PHP and WordPress sites on a Contabo VPS, using Docker, Nginx, SSL and DNS, run end to end.</span></li>
+      <li><b><a href="https://github.com/sudhin79/kubernetes-nimbus-platform" rel="noopener">Project Nimbus ↗</a></b><span>My Kubernetes lab on Kind. I delete pods on purpose and document what the cluster does: replicas, Services, self-healing, health probes.</span></li>
+      <li><b><a href="https://github.com/sudhin79/aws-terraform-alb-project" rel="noopener">AWS with Terraform ↗</a></b><span>Load-balanced EC2 fleets defined in code, then auto-scaling on CloudWatch alarms with SNS alerts, tested with a load-generation script.</span></li>
+    </ul>
+  </section>
+
+  <!-- 04:30 -->
+  <section id="pipeline" class="pipe-section" data-time="04:30" data-sky="0.14">
+    <header class="section-head">
+      <p class="stamp">04:30 · The pipeline</p>
+      <h2>Someone pushes code before going to bed. <em>What happens next?</em></h2>
+      <p class="section-sub">The answer should never be “we’ll see in the morning.” This is the shape of the pipelines I write. Try pushing something bad.</p>
+    </header>
+    <div class="pipe-controls" role="group" aria-label="Choose what to push">
+      <button type="button" class="chip" data-run="clean">Push good code</button>
+      <button type="button" class="chip" data-run="vuln">Push a vulnerable image</button>
+      <button type="button" class="chip" data-run="broken">Push a broken release</button>
+    </div>
+    <ol class="rail" id="rail"></ol>
+    <pre class="console" id="pipe-log" tabindex="0" aria-label="Pipeline output"><code>Press a button above to run the pipeline.</code></pre>
+    <p class="honest">A scripted replay of the stages, not a live Jenkins server.</p>
+  </section>
+
+  <!-- 05:15 -->
+  <section id="kit" class="kit-section" data-time="05:15" data-sky="0.24">
+    <header class="section-head">
+      <p class="stamp">05:15 · Toolkit</p>
+      <h2>An honest list, because you’ll <em>ask in the interview</em> anyway.</h2>
+    </header>
+    <div class="kit">
+      <div class="kit-row">
+        <h3>Use every week</h3>
+        <p>Docker &amp; Compose, Jenkins (Declarative, Groovy), Nginx, Linux (Ubuntu, RHEL, CentOS), Bash, Git &amp; GitHub, SSL with Certbot</p>
+      </div>
+      <div class="kit-row">
+        <h3>Have run in production</h3>
+        <p>AWS (EC2, S3, IAM, CloudWatch, SES, SNS), GCP (Compute Engine, VPC, Cloud Run), Prometheus, Grafana, Alertmanager, Node Exporter, cAdvisor, Trivy, SonarQube, PostgreSQL, MongoDB, MySQL, Cloudflare Tunnel</p>
+      </div>
+      <div class="kit-row">
+        <h3>Actively levelling up</h3>
+        <p>Kubernetes (Kind, Deployments, probes, Ingress, PVCs, Helm), Terraform, Azure (Entra ID, DevOps APIs), Python scripting, AWS Solutions Architect (SAA-C03)</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 06:10 -->
+  <section id="path" class="path-section" data-time="06:10" data-sky="0.42">
+    <header class="section-head">
+      <p class="stamp">06:10 · How I got here</p>
+      <h2>The sky’s getting lighter. <em>So is the on-call load.</em></h2>
+    </header>
+    <ol class="path">
+      <li class="now"><p class="when">Dec 2025 – now</p><div><h3>DevOps Engineer, B2W Infotech</h3><p>Running deployments, CI/CD and monitoring across AWS and GCP in Mumbai, and teaching the team Docker and Jenkins in internal sessions.</p></div></li>
+      <li><p class="when">Oct – Dec 2025</p><div><h3>Cloud Intern, TechEazy</h3><p>First real cloud environments: AWS and Azure infrastructure, pipelines and managed services.</p></div></li>
+      <li><p class="when">2021 – 2025</p><div><h3>B.E. Information Technology, Bharati Vidyapeeth</h3><p>CGPA 7.7. Networking, systems and my first DevOps projects.</p></div></li>
+      <li><p class="when">Credentials</p><div><h3>AWS Certified AI Practitioner</h3><p>Also the LearnTube AWS Cloud Assessment. Now preparing for AWS Solutions Architect Associate.</p></div></li>
+    </ol>
+  </section>
+
+  <!-- 07:00 -->
+  <section id="morning" class="morning" data-time="07:00" data-sky="1">
+    <div class="morning-copy">
+      <p class="stamp">07:00 · Handover</p>
+      <h2>Nobody noticed.<br><em>That’s the job.</em></h2>
+      <p class="lede">I’m looking for DevOps and Cloud roles, in Mumbai or remote. If your team wants fewer 3 a.m. stories, I’d like to hear from you.</p>
+      <div class="contact">
+        <a class="btn btn-primary" href="mailto:sudhinswain@gmail.com">sudhinswain@gmail.com</a>
+        <button type="button" class="btn" id="copy-email">Copy email</button>
+        <a class="btn" href="https://www.linkedin.com/in/sudhin-swain-b2a9461b7/" rel="noopener">LinkedIn ↗</a>
+        <a class="btn" href="https://github.com/sudhin79" rel="noopener">GitHub ↗</a>
+        <button type="button" class="btn" data-print>Save résumé as PDF</button>
+      </div>
+    </div>
+    <div class="stage" data-stage="wide" aria-hidden="true"></div>
+    <footer class="foot"><span>© 2026 Sudhin Swain · Mumbai</span><span>No frameworks. No trackers.</span></footer>
+  </section>
+</main>
+
+<div class="toasts" id="toasts" role="status" aria-live="polite"></div>
+
+<!-- One source of truth: this is both the 30-second view and the printed résumé. -->
+<dialog id="quick" aria-labelledby="q-name">
+  <article class="resume">
+    <button type="button" class="q-close" id="q-close" aria-label="Close">✕</button>
+    <header>
+      <h2 id="q-name">Sudhin Swain</h2>
+      <p class="q-role">DevOps Engineer · Mumbai, India · Open to DevOps and Cloud roles</p>
+      <p class="q-links"><a href="mailto:sudhinswain@gmail.com">sudhinswain@gmail.com</a> · <a href="https://www.linkedin.com/in/sudhin-swain-b2a9461b7/">linkedin.com/in/sudhin-swain-b2a9461b7</a> · <a href="https://github.com/sudhin79">github.com/sudhin79</a></p>
+    </header>
+    <p class="q-summary">DevOps engineer who automates CI/CD, runs containerised applications on AWS and GCP, and sets up the monitoring that catches failures early. Experienced with Declarative Jenkins pipelines, multi-container deployments, Nginx and Prometheus + Grafana, and growing fast in Kubernetes and Terraform.</p>
+    <h3>Experience</h3>
+    <div class="q-item"><p><b>DevOps Engineer, B2W Infotech</b><span>Dec 2025 – present</span></p>
+      <ul>
+        <li>Build Jenkins pipelines on GCP agents for React and Node.js applications, with post-deploy health checks.</li>
+        <li>Deploy and run multi-container apps on AWS EC2, GCP and Contabo VPS using Docker, Nginx and SSL.</li>
+        <li>Set up Prometheus, Grafana, Alertmanager, Node Exporter and cAdvisor, scraping Jenkins via Cloudflare Tunnel.</li>
+        <li>Deployed an enterprise app onto client RHEL servers behind a proxy and firewall.</li>
+        <li>Built resilient batch processing for an AI resume parser: concurrency limits, dead-letter queue, re-queue API.</li>
+        <li>Lead internal Docker and Jenkins sessions for the team.</li>
+      </ul>
+    </div>
+    <div class="q-item"><p><b>Cloud Intern, TechEazy</b><span>Oct – Dec 2025</span></p>
+      <ul><li>Worked on AWS and Azure infrastructure, deployment pipelines and managed services.</li></ul>
+    </div>
+    <h3>Skills</h3>
+    <p><b>Daily:</b> Docker, Compose, Jenkins, Nginx, Linux, Bash, Git, Certbot.
+       <b>Production:</b> AWS (EC2, S3, IAM, CloudWatch, SES, SNS), GCP (Compute Engine, VPC, Cloud Run), Prometheus, Grafana, Alertmanager, Trivy, SonarQube, PostgreSQL, MongoDB, MySQL.
+       <b>Growing:</b> Kubernetes, Terraform, Helm, Azure, Python.</p>
+    <h3>Education and credentials</h3>
+    <p>B.E. Information Technology, Bharati Vidyapeeth (2021 – 2025), CGPA 7.7. AWS Certified AI Practitioner. AWS Solutions Architect Associate in progress.</p>
+    <div class="q-actions">
+      <button type="button" class="btn btn-primary" data-print>Save as PDF</button>
+      <a class="btn" href="mailto:sudhinswain@gmail.com">Email me</a>
+    </div>
+  </article>
+</dialog>
+
+<script src="js/sim.js" defer></script>
+<script src="js/city.js" defer></script>
+<script src="js/audio.js" defer></script>
+<script src="js/flows.js" defer></script>
+<script src="js/game.js" defer></script>
+<script src="js/main.js" defer></script>
+</body>
+</html>
